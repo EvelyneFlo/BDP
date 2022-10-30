@@ -1,0 +1,84 @@
+1) shp2pgsql T2018_KAR_BUILDINGS.shp buildings2018 | psql -h localhost -p 5433 -U postgres  -d cw3
+   shp2pgsql T2019_KAR_BUILDINGS.shp buildings2019 | psql -h localhost -p 5433 -U postgres  -d cw3
+
+   SELECT b19.gid, b19.polygon_id, b19.name, b19.type, b19.height, ST_AsText(b19.geom) 
+   FROM buildings2019 b19
+   LEFT JOIN buildings2018 b18 ON b18.geom = b19.geom
+   WHERE b18.gid IS NULL;
+
+
+2) shp2pgsql T2018_KAR_POI_TABLE.shp poi2018 | psql -h localhost -p 5433 -U postgres  -d cw3
+   shp2pgsql T2019_KAR_POI_TABLE.shp poi2019 | psql -h localhost -p 5433 -U postgres  -d cw3
+
+   CREATE VIEW new_buildings AS
+      SELECT b19.gid, b19.polygon_id, b19.name, b19.type, b19.height, b19.geom 
+      FROM buildings2019 b19
+      LEFT JOIN buildings2018 b18 ON b18.geom = b19.geom
+      WHERE b18.gid IS NULL;
+
+   CREATE VIEW new_points AS 
+      SELECT p19.gid, p19.poi_id, p19.link_id, p19.type, p19.poi_name, p19.st_name,
+      p19.lat, p19.lon, p19.geom 
+      FROM poi2019 p19
+      LEFT JOIN poi2018 p18 ON p18.geom = p19.geom
+      WHERE p18.gid IS NULL;     
+   
+   CREATE VIEW buffer_points AS
+      SELECT DISTINCT p.type, p.gid FROM new_points p
+      JOIN new_buildings b ON ST_Intersects(p.geom, ST_Buffer(b.geom,0.005));
+      --1 ~ 111km
+      --0.005 ~ 500m
+
+   SELECT type, COUNT(*) FROM buffer_points GROUP BY type;
+
+3) shp2pgsql T2019_KAR_STREETS.shp street2019 | psql -h localhost -p 5433 -U postgres  -d cw3
+   
+   CREATE TABLE streets_reprojected(gid_id int, link_id numeric, st_name varchar(254), ref_in_id numeric,
+	  			    nref_in_id numeric, func_class varchar(1), speed_cat varchar(1), 
+				    fr_speed_I numeric, to_speed_I numeric, dir_travel varchar(1), geom geometry);
+
+   INSERT INTO streets_reprojected 
+   SELECT s.gid, s.link_id, s.st_name, s.ref_in_id, s.nref_in_id, s.func_class, s.speed_cat, 
+	  s.fr_speed_l, s.to_speed_l, s.dir_travel, ST_Transform(ST_SetSRID(s.geom,4326), 3068)
+   FROM street2019 s
+
+4) CREATE TABLE inputs_points (id int, name varchar, geom geometry);
+
+   INSERT INTO inputs_points VALUES
+   (1, 'point1', 'POINT(8.36093 49.03174)'),
+   (2, 'point2', 'POINT(8.39876 49.00644)');
+
+5) UPDATE inputs_points
+   SET geom = ST_Transform(ST_SetSRID(geom,4326), 3068);
+
+6) shp2pgsql T2019_KAR_STREET_NODE.shp streetNode2019 | psql -h localhost -p 5433 -U postgres  -d cw3
+
+   UPDATE streetnode2019
+   SET geom = ST_Transform(ST_SetSRID(geom,4326), 3068);
+   
+   CREATE VIEW lines AS
+      SELECT ST_Makeline(geom) as line FROM inputs_points;
+
+   SELECT sn.*,
+   FROM streetnode2019 sn 
+   CROSS JOIN lines l
+   WHERE ST_Contains(ST_Buffer(l.line, 0.002),sn.geom);
+
+7) shp2pgsql T2019_KAR_LAND_USE_A.shp landA2019 | psql -h localhost -p 5433 -U postgres  -d cw3
+
+   CREATE VIEW parks AS
+      SELECT ST_Buffer(la.geom, 0.003) FROM landa2019 la
+      WHERE la.type = 'Park (City/County)';
+
+   SELECT COUNT(*) FROM poi2019 p
+   CROSS JOIN parks pa
+   WHERE p.type ='Sporting Goods Store'
+   AND ST_Contains(pa.st_buffer, p.geom);
+   
+8) shp2pgsql T2019_KAR_RAILWAYS.shp railways2019 | psql -h localhost -p 5433 -U postgres  -d cw3
+   shp2pgsql T2019_KAR_WATER_LINES.shp waterlines2019 | psql -h localhost -p 5433 -U postgres  -d cw3
+
+   SELECT ST_Intersection(r.geom, w.geom) as geom
+   INTO T2019_KAR_BRIDGES
+   FROM railways2019 r, waterlines2019 w 
+
