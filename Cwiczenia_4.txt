@@ -1,0 +1,23 @@
+CREATE DATABASE cw4;
+CREATE EXTENSION postgis;
+
+shp2pgsql airports.shp airports | psql -h localhost -p 5433 -U postgres  -d cw4
+shp2pgsql builtups.shp builtups | psql -h localhost -p 5433 -U postgres  -d cw4
+shp2pgsql grassland.shp grassland | psql -h localhost -p 5433 -U postgres  -d cw4
+shp2pgsql lakes.shp lakes | psql -h localhost -p 5433 -U postgres  -d cw4
+shp2pgsql landice.shp landice | psql -h localhost -p 5433 -U postgres  -d cw4
+shp2pgsql majrivers.shp majrivers | psql -h localhost -p 5433 -U postgres  -d cw4
+shp2pgsql pipelines.shp pipelines | psql -h localhost -p 5433 -U postgres  -d cw4
+shp2pgsql popp.shp popp | psql -h localhost -p 5433 -U postgres  -d cw4
+shp2pgsql railroads.shp railroads | psql -h localhost -p 5433 -U postgres  -d cw4
+shp2pgsql regions.shp regions | psql -h localhost -p 5433 -U postgres  -d cw4
+shp2pgsql rivers.shp rivers | psql -h localhost -p 5433 -U postgres  -d cw4
+shp2pgsql storagep.shp storagep | psql -h localhost -p 5433 -U postgres  -d cw4
+shp2pgsql swamp.shp swamp | psql -h localhost -p 5433 -U postgres  -d cw4
+shp2pgsql trails.shp trails | psql -h localhost -p 5433 -U postgres  -d cw4
+shp2pgsql trees.shp trees | psql -h localhost -p 5433 -U postgres  -d cw4
+shp2pgsql tundra.shp tundra | psql -h localhost -p 5433 -U postgres  -d cw4
+
+
+
+
