@@ -1,0 +1,30 @@
+CREATE DATABASE cw5;
+CREATE EXTENSION postgis;
+
+1) CREATE TABLE obiekty(id int, geometry geometry, name varchar);
+   INSERT INTO obiekty VALUES(1, ST_Collect(ARRAY['LINESTRING(0 1, 1 1)','CIRCULARSTRING(1 1, 2 0, 3 1)','CIRCULARSTRING(3 1, 4 2, 5 1)','LINESTRING(5 1, 6 1)']), 'obiekt1');
+   INSERT INTO obiekty VALUES(2, ST_Collect(ARRAY['LINESTRING(10 6, 14 6)','CIRCULARSTRING(14 6, 16 4, 14 2)','CIRCULARSTRING(14 2, 12 0, 10 2)','LINESTRING(10 2, 10 6)','CIRCULARSTRING(11 2, 12 3, 13 2, 12 1, 11 2)']),'obiekt2');
+   INSERT INTO obiekty VALUES(3, ST_Collect(ARRAY['LINESTRING(7 15,10 17)','LINESTRING(10 17,12 13)','LINESTRING(12 13,7 15)']) ,'obiekt3');
+   INSERT INTO obiekty VALUES(4, ST_Collect(ARRAY['LINESTRING(20 20,25 25)','LINESTRING(25 25,27 24)','LINESTRING(27 24,25 22)','LINESTRING(25 22,26 21)','LINESTRING(26 21,22 19)','LINESTRING(22 19,20.5 19.5)']),'obiekt4');
+   INSERT INTO obiekty VALUES(5, ST_Collect('POINT(30 30 59)','POINT(38 32 234)'),'obiekt5');
+   INSERT INTO obiekty VALUES(6, ST_Collect('POINT(4 2)','LINESTRING(1 1, 3 2)'),'obiekt6');
+
+2) SELECT ST_Area(ST_Buffer(ST_ShortestLine(o1.geometry, o2.geometry),5)) 
+   FROM obiekty o1, obiekty o2
+   WHERE o1.name = 'obiekt3' AND o2.name = 'obiekt4';
+
+3) UPDATE obiekty SET 
+   geometry = ST_MakePolygon(ST_GeomFromText('LINESTRING(20 20, 25 25,27 24, 25 22, 26 21, 22 19, 20.5 19.5, 20 20)'))
+   WHERE name = 'obiekt4';
+
+4) INSERT INTO obiekty VALUES(7,(
+	SELECT ST_Collect(o1.geometry, o2.geometry) 
+	FROM obiekty o1, obiekty o2 
+	WHERE o1.name = 'obiekt3' 
+	AND o2.name = 'obiekt4'),
+   'obiekt7');
+
+5) SELECT name, ST_AREA(ST_Buffer(geometry,5)) 
+   FROM obiekty 
+   WHERE ST_HasArc(geometry) = FALSE;
+
